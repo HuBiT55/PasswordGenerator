@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generator hasła</title>
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+    }
+
+    #container {
+      display: flex;
+    }
+
+    #password-generator {
+      text-align: center;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease-in-out;
+    }
+
+    input[type="range"] {
+      width: 80%;
+      margin-bottom: 10px;
+    }
+
+    button {
+      margin: 5px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #4caf50;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      transition: background-color 0.3s ease-in-out;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    #password-strength {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    #password-tips {
+      margin-top: 10px;
+      text-align: left;
+      display: none;
+    }
+
+    #copy-feedback {
+      margin-top: 10px;
+      color: green;
+      font-weight: bold;
+      display: none;
+    }
+
+    #password-rules {
+      background-color: #f0f0f0;
+      padding: 15px;
+      border-radius: 8px;
+      margin-left: 20px;
+      width: 200px;
+    }
+
+    #password-rules h3 {
+      margin-bottom: 10px;
+    }
+
+    #password-rules ul {
+      list-style-type: none;
+      padding: 0;
+    }
+
+    #password-rules li {
+      margin-bottom: 5px;
+    }
+
+    #strength-bar {
+      height: 15px;
+      border-radius: 5px;
+      margin-top: 10px;
+      overflow: hidden;
+      background-color: #ddd; /* Dodane tło dla wskaźnika siły hasła */
+    }
+
+    #strength-indicator {
+      height: 100%;
+      width: 0;
+      transition: width 0.5s ease-in-out;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div id="password-generator">
+      <label for="length">Długość hasła: </label>
+      <input type="number" id="length" min="6" max="30" value="12">
+      <input type="range" id="lengthRange" min="6" max="30" value="12">
+
+      <br>
+
+      <label>Opcje: </label>
+      <input type="checkbox" id="uppercase" checked> <label for="uppercase">Wielkie litery AZ</label>
+      <input type="checkbox" id="numbers" checked> <label for="numbers">Cyfry (0-9)</label>
+      <input type="checkbox" id="specialChars" checked> <label for="specialChars">Znaki specjalne (!?@#$%^&*)</label>
+
+      <br>
+
+      <button onclick="generatePassword()">Generuj</button>
+      <button onclick="copyToClipboard()">Skopiuj</button>
+
+      <br>
+
+      <textarea id="generatedPassword" rows="3" readonly></textarea>
+
+      <div id="password-strength"></div>
+      <div id="password-tips"></div>
+      <div id="copy-feedback">Skopiowano do schowka!</div>
+
+      <div id="strength-bar">
+        <div id="strength-indicator"></div>
+      </div>
+    </div>
+
+    <div id="password-rules">
+      <h3>Zasady silnego hasła:</h3>
+      <ul>
+        <li>Użyj co najmniej 6 znaków.</li>
+        <li>Włącz zarówno małe, jak i wielkie litery.</li>
+        <li>Dodaj co najmniej dwie cyfry, aby zwiększyć trudność hasła.</li>
+        <li>Użyj znaków specjalnych (!?@#$%^&*), ale nie na początku ani na końcu hasła.</li>
+        <li>Unikaj prostych sekwencji lub słów.</li>
+        <li>Musi zawierać co najmniej jedną literę z każdej opcji (wielkie litery, cyfry, znaki specjalne).</li>
+      </ul>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/zxcvbn/4.4.2/zxcvbn.js"></script>
+  <script>
+    function generatePassword() {
+      const length = document.getElementById('length').value;
+      const uppercase = document.getElementById('uppercase').checked;
+      const numbers = document.getElementById('numbers').checked;
+      const specialChars = document.getElementById('specialChars').checked;
+
+      const charset = 'abcdefghijklmnopqrstuvwxyz' +
+                      (uppercase ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' : '') +
+                      (numbers ? '0123456789' : '') +
+                      (specialChars ? '!@#$%^&*' : '');
+
+      let password = '';
+
+      // Dodaj co najmniej jedną literę z każdej opcji, jeśli zaznaczono
+      password += uppercase ? getRandomChar('ABCDEFGHIJKLMNOPQRSTUVWXYZ') : '';
+      password += numbers ? getRandomChar('0123456789') + getRandomChar('0123456789') : '';
+      password += specialChars ? getRandomChar('!@#$%^&*') : '';
+
+      // Uzupełnij resztę hasła
+      for (let i = password.length; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * charset.length);
+        password += charset.charAt(randomIndex);
+      }
+
+      document.getElementById('generatedPassword').value = password;
+
+      // Ocena siły hasła za pomocą zxcvbn
+      const passwordStrength = zxcvbn(password);
+      document.getElementById('password-strength').innerHTML = `Siła hasła: ${passwordStrength.score}/4`;
+
+      // Podpowiedzi dotyczące zwiększenia bezpieczeństwa hasła
+      const tipsContainer = document.getElementById('password-tips');
+      tipsContainer.style.display = 'block';
+
+      let tips = [];
+
+      if (passwordStrength.feedback.suggestions.length > 0) {
+        tips.push(...passwordStrength.feedback.suggestions);
+      } else {
+        if (!uppercase) tips.push("Dodaj wielkie litery, aby zwiększyć trudność hasła.");
+        if (!numbers) tips.push("Dodaj co najmniej dwie cyfry, aby zwiększyć trudność hasła.");
+        if (!specialChars) tips.push("Dodaj znaki specjalne, aby zwiększyć trudność hasła (ale nie na początku ani na końcu).");
+      }
+
+      tipsContainer.innerHTML = tips.length > 0
+        ? "<p>Podpowiedzi do zwiększenia bezpieczeństwa hasła:</p>" + tips.map(tip => `<li>${tip}</li>`).join('')
+        : "<p>Twoje hasło jest silne!</p>";
+
+      // Kolorowe wskaźniki siły hasła
+      const strengthBar = document.getElementById('strength-bar');
+      const strengthIndicator = document.getElementById('strength-indicator');
+
+      switch (passwordStrength.score) {
+        case 0:
+        case 1:
+          strengthBar.style.backgroundColor = '#ff4d4d'; // Czerwony
+          break;
+        case 2:
+          strengthBar.style.backgroundColor = '#ffa500'; // Pomarańczowy
+          break;
+        case 3:
+          strengthBar.style.backgroundColor = '#ffd700'; // Złoty
+          break;
+        case 4:
+          strengthBar.style.backgroundColor = '#7cfc00'; // Zielony
+          break;
+        case 5:
+          strengthBar.style.backgroundColor = '#00ff00'; // Jasnozielony
+          break;
+        case 6:
+          strengthBar.style.backgroundColor = '#008000'; // Zielony
+          break;
+      }
+
+      strengthIndicator.style.width = `${(passwordStrength.score + 1) * 16.66666667}%`;
+
+      // Ukryj informację o skopiowaniu do schowka po każdym nowym haśle
+      document.getElementById('copy-feedback').style.display = 'none';
+    }
+
+    function getRandomChar(charset) {
+      const randomIndex = Math.floor(Math.random() * charset.length);
+      return charset.charAt(randomIndex);
+    }
+
+    function copyToClipboard() {
+      const passwordField = document.getElementById('generatedPassword');
+      passwordField.select();
+      document.execCommand('copy');
+      document.getElementById('copy-feedback').style.display = 'block';
+
+      // Automatycznie ukryj informację o skopiowaniu po 3 sekundach
+      setTimeout(function() {
+        document.getElementById('copy-feedback').style.display = 'none';
+      }, 3000);
+    }
+
+    document.getElementById('lengthRange').addEventListener('input', function() {
+      document.getElementById('length').value = this.value;
+    });
+  </script>
+</body>
+</html>
